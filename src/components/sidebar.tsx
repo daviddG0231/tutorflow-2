@@ -2,15 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, PlusCircle, ClipboardList, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, BookOpen, PlusCircle, ClipboardList, Settings, LogOut, CalendarCheck } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import clsx from 'clsx'
 
 const navItems = [
   { label: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
   { label: 'My Courses', href: '/teacher/courses', icon: BookOpen },
-  { label: 'Create Course', href: '/teacher/courses/new', icon: PlusCircle },
   { label: 'Assignments', href: '/teacher/assignments', icon: ClipboardList },
+  { label: 'Create Course', href: '/teacher/courses/new', icon: PlusCircle },
 ]
 
 export default function Sidebar() {
@@ -22,6 +22,7 @@ export default function Sidebar() {
         { label: 'Dashboard', href: '/student', icon: LayoutDashboard },
         { label: 'My Courses', href: '/student/courses', icon: BookOpen },
         { label: 'Assignments', href: '/student/assignments', icon: ClipboardList },
+        { label: 'Attendance', href: '/student/attendance', icon: CalendarCheck },
       ]
     : navItems
 
