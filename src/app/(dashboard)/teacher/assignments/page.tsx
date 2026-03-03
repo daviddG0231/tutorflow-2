@@ -13,6 +13,7 @@ import {
   AlertCircle,
   ArrowRight,
 } from 'lucide-react'
+import CreateAssignmentModal from './CreateAssignmentModal'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,13 +76,7 @@ export default async function TeacherAssignmentsPage() {
             Manage and grade assignments across all your courses
           </p>
         </div>
-        <Link
-          href="#"
-          className="inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-sky-600 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Create Assignment
-        </Link>
+        <CreateAssignmentModal />
       </div>
 
       {/* Assignments List */}
@@ -94,13 +89,9 @@ export default async function TeacherAssignmentsPage() {
           <p className="mt-2 text-sm text-gray-500">
             Create your first assignment to get started.
           </p>
-          <Link
-            href="#"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-600 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Create your first assignment
-          </Link>
+          <div className="mt-6">
+            <CreateAssignmentModal />
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
