@@ -21,11 +21,7 @@ interface Module {
   resources: number;
 }
 
-const defaultModules: Module[] = [
-  { name: 'Cell Structure & Organization', resources: 0 },
-  { name: 'Movement In & Out of Cells', resources: 0 },
-  { name: 'Biological Molecules', resources: 0 },
-];
+const defaultModules: Module[] = [];
 
 interface StudentGroup {
   label: string;
@@ -43,11 +39,7 @@ export default function CreateCoursePage() {
   const [editingName, setEditingName] = useState('');
   const [newModuleName, setNewModuleName] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
-  const [groups, setGroups] = useState<StudentGroup[]>([
-    { label: 'Year 11 - Biology Alpha', checked: true },
-    { label: 'Year 11 - Biology Beta', checked: true },
-    { label: 'IGCSE Fast-Track Summer', checked: false },
-  ]);
+  const [groups, setGroups] = useState<StudentGroup[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [editingGroupIdx, setEditingGroupIdx] = useState<number | null>(null);
