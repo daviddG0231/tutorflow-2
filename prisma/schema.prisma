@@ -1,18 +1,3 @@
-// ============================================================
-// TutorFlow — Prisma Schema
-//
-// This file defines the entire database structure.
-// Each model maps to a PostgreSQL table.
-//
-// KEY CONCEPTS:
-// - @id: Primary key
-// - @unique: No duplicates allowed
-// - @default: Auto-generated values
-// - @relation: Foreign key connections
-// - @@unique: Composite unique constraint
-// - @@index: Database index for faster queries
-// ============================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -22,219 +7,168 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── ENUMS ─────────────────────────────────────────────────
-
-// User roles — determines what a user can do
-enum Role {
-  TEACHER
-  STUDENT
-}
-
-// Enrollment status — tracks approval flow
-enum EnrollmentStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-// Content file types
-enum FileType {
-  VIDEO
-  PDF
-  SLIDE
-  IMAGE
-  DOCUMENT
-}
-
-// Attendance status
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-}
-
-// ─── MODELS ────────────────────────────────────────────────
-
-// User — anyone on the platform (teacher or student)
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role
-  createdAt    DateTime @default(now())
-
-  // Relations
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          Role
+  createdAt     DateTime       @default(now())
+  attendances   Attendance[]
   courses       Course[]
   enrollments   Enrollment[]
-  submissions   Submission[]
-  quizGrades    QuizGrade[]
-  attendances   Attendance[]
   notifications Notification[]
+  quizGrades    QuizGrade[]
+  submissions   Submission[]
 
   @@index([email])
   @@index([role])
 }
 
-// Course — a class created by a teacher
 model Course {
-  id          String   @id @default(cuid())
-  teacherId   String
-  name        String
-  description String?
-  location    String?
-  courseCode  String   @unique
-  createdAt   DateTime @default(now())
-
-  // Relations
+  id            String         @id @default(cuid())
+  teacherId     String
+  name          String
+  description   String?
+  location      String?
+  courseCode    String         @unique
+  createdAt     DateTime       @default(now())
+  assignments   Assignment[]
+  attendances   Attendance[]
+  contents      Content[]
   teacher       User           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  groups        CourseGroup[]
   enrollments   Enrollment[]
   modules       Module[]
-  contents      Content[]
-  assignments   Assignment[]
-  quizzes       Quiz[]
-  attendances   Attendance[]
   notifications Notification[]
-  groups        CourseGroup[]
+  quizzes       Quiz[]
 
   @@index([teacherId])
   @@index([courseCode])
 }
 
-// Enrollment — links a student to a course (with approval)
 model Enrollment {
   id         String           @id @default(cuid())
   studentId  String
   courseId   String
   status     EnrollmentStatus @default(PENDING)
   enrolledAt DateTime         @default(now())
-
   groupId    String?
-  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course  Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  group   CourseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  group      CourseGroup?     @relation(fields: [groupId], references: [id])
+  student    User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, courseId])
   @@index([studentId])
   @@index([courseId])
 }
 
-// Module — a section/chapter within a course
 model Module {
-  id        String   @id @default(cuid())
-  courseId   String
+  id        String    @id @default(cuid())
+  courseId  String
   name      String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  contents  Content[]
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  contents Content[]
-
+  @@unique([courseId, name])
   @@index([courseId])
 }
 
-// Content — learning materials (videos, PDFs, etc.)
 model Content {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   courseId    String
-  moduleId   String?
-  groupId    String?
   title       String
   description String?
-  fileUrl     String
+  fileUrl     String?
   fileType    FileType
-  createdAt   DateTime @default(now())
-
-  course Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  module Module?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  group  CourseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  groupId     String?
+  moduleId    String?
+  textContent String?
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  group       CourseGroup? @relation(fields: [groupId], references: [id])
+  module      Module?      @relation(fields: [moduleId], references: [id])
 
   @@index([courseId])
   @@index([moduleId])
   @@index([groupId])
 }
 
-// Assignment — homework or tasks
 model Assignment {
-  id            String   @id @default(cuid())
-  courseId       String
-  groupId       String?
+  id            String       @id @default(cuid())
+  courseId      String
   title         String
   description   String?
   attachmentUrl String?
   deadline      DateTime
   totalMarks    Int
-  createdAt     DateTime @default(now())
-
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  group       CourseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  submissions Submission[]
+  createdAt     DateTime     @default(now())
+  groupId       String?
+  course        Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  group         CourseGroup? @relation(fields: [groupId], references: [id])
+  submissions   Submission[]
 
   @@index([courseId])
   @@index([groupId])
   @@index([deadline])
 }
 
-// Submission — student's submitted work
 model Submission {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   assignmentId String
   studentId    String
   fileUrl      String
-  submittedAt  DateTime  @default(now())
+  submittedAt  DateTime   @default(now())
   grade        Int?
   feedback     String?
   gradedAt     DateTime?
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
+  @@unique([assignmentId, studentId])
   @@index([assignmentId])
   @@index([studentId])
 }
 
-// Quiz — a quiz or exam for a course
 model Quiz {
-  id         String      @id @default(cuid())
-  courseId    String
-  groupId    String?
+  id         String       @id @default(cuid())
+  courseId   String
   name       String
   totalMarks Int
-  createdAt  DateTime    @default(now())
-
-  course Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  group  CourseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  grades QuizGrade[]
+  createdAt  DateTime     @default(now())
+  groupId    String?
+  course     Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  group      CourseGroup? @relation(fields: [groupId], references: [id])
+  grades     QuizGrade[]
 
   @@index([courseId])
   @@index([groupId])
 }
 
-// QuizGrade — student's score on a quiz
 model QuizGrade {
   id        String   @id @default(cuid())
   quizId    String
   studentId String
   marks     Int
   gradedAt  DateTime @default(now())
-
-  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([quizId, studentId])
   @@index([quizId])
   @@index([studentId])
 }
 
-// Attendance — daily tracking per student per course
 model Attendance {
   id        String           @id @default(cuid())
-  courseId   String
+  courseId  String
   studentId String
   date      DateTime
   status    AttendanceStatus
-
-  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student   User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, studentId, date])
   @@index([courseId])
@@ -242,36 +176,57 @@ model Attendance {
   @@index([date])
 }
 
-// Notification — messages about course activity
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  courseId   String?
+  courseId  String?
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([courseId])
   @@index([read])
 }
 
-// CourseGroup — sub-groups within a course (e.g., Center A, School, Private)
 model CourseGroup {
-  id        String   @id @default(cuid())
-  courseId   String
-  name      String
-  createdAt DateTime @default(now())
-
+  id          String       @id @default(cuid())
+  courseId    String
+  name        String
+  createdAt   DateTime     @default(now())
+  assignments Assignment[]
+  contents    Content[]
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
-  contents    Content[]
-  assignments Assignment[]
   quizzes     Quiz[]
 
   @@unique([courseId, name])
   @@index([courseId])
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FileType {
+  VIDEO
+  PDF
+  SLIDE
+  IMAGE
+  DOCUMENT
+  NOTE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
 }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import EnrollmentActions from './EnrollmentActions'
+import ModulesContent from './ModulesContent'
 import {
   Users,
   ClipboardList,
@@ -161,6 +162,15 @@ export default async function TeacherCourseDetailPage({
             </div>
           )
         })}
+      </div>
+
+      {/* Modules & Content */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-gray-400" />
+          Modules &amp; Content
+        </h2>
+        <ModulesContent courseId={courseId} />
       </div>
 
       {/* Student Roster */}
