@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Allow up to 30s for file upload
 // ============================================================
 // api/submissions/route.ts — Student submits work
 //
@@ -93,8 +94,14 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(submission, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("POST /api/submissions error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
+    // Surface Cloudinary / Prisma errors for easier debugging
+    if (message.includes("cloud") || message.includes("upload")) {
+      return NextResponse.json({ error: "File upload failed. Please try a smaller file or different format." }, { status: 502 });
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

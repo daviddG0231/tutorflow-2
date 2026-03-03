@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 // ============================================================
 // api/upload/route.ts — File upload via Cloudinary
 //
