@@ -9,7 +9,6 @@ import {
   Download,
   MessageCircle,
   Clock,
-  Users,
 } from 'lucide-react'
 import CourseContentTree from './CourseContentTree'
 import JoinCourseBar from './JoinCourseBar'
@@ -113,14 +112,6 @@ export default async function StudentCourseView({
             gradedSubmissions.length
         )
       : null
-
-  // Static group members (no DB model for this)
-  const groupMembers = [
-    { name: 'Sarah K.', initials: 'SK', color: 'bg-pink-400' },
-    { name: 'James M.', initials: 'JM', color: 'bg-sky-400' },
-    { name: 'Aisha R.', initials: 'AR', color: 'bg-emerald-400' },
-    { name: 'David L.', initials: 'DL', color: 'bg-violet-400' },
-  ]
 
   return (
     <div className="space-y-5">
@@ -322,26 +313,6 @@ export default async function StudentCourseView({
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Group Members (static placeholder) */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Biology Group A</h3>
-            <div className="space-y-2.5">
-              {groupMembers.map((m, i) => (
-                <div key={i} className="flex items-center gap-2.5">
-                  <div
-                    className={`w-7 h-7 rounded-full ${m.color} flex items-center justify-center text-[10px] font-bold text-white`}
-                  >
-                    {m.initials}
-                  </div>
-                  <span className="text-xs text-gray-600">{m.name}</span>
-                </div>
-              ))}
-            </div>
-            <button className="mt-3 text-xs text-sky-500 hover:text-sky-600 font-medium flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" /> View all members
-            </button>
           </div>
 
           {/* Struggling CTA */}

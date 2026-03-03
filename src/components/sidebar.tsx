@@ -10,6 +10,7 @@ const navItems = [
   { label: 'Dashboard', href: '/teacher', icon: LayoutDashboard },
   { label: 'My Courses', href: '/teacher/courses', icon: BookOpen },
   { label: 'Assignments', href: '/teacher/assignments', icon: ClipboardList },
+  { label: 'Attendance', href: '/teacher/attendance', icon: CalendarCheck },
   { label: 'Create Course', href: '/teacher/courses/new', icon: PlusCircle },
 ]
 

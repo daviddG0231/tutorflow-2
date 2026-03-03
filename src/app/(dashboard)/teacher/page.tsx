@@ -25,21 +25,15 @@ const QUICK_ACTIONS = [
   { title: 'Review Submissions', desc: 'Grade and provide feedback on student work.', icon: FileSearch, href: '/teacher/assignments' },
 ]
 
-const PARTICIPATION = [
-  { day: 'Mon', pct: 85 },
-  { day: 'Tue', pct: 72 },
-  { day: 'Wed', pct: 90 },
-  { day: 'Thu', pct: 65 },
-  { day: 'Fri', pct: 78 },
-  { day: 'Sat', pct: 40 },
-  { day: 'Sun', pct: 25 },
-]
-
-const SCHEDULE = [
-  { time: '08:30 AM', course: 'IGCSE Biology', room: 'Room 204', color: 'border-emerald-500' },
-  { time: '10:00 AM', course: 'IGCSE Chemistry', room: 'Lab 3B', color: 'border-sky-500' },
-  { time: '01:00 PM', course: 'IGCSE Physics', room: 'Room 112', color: 'border-violet-500' },
-  { time: '03:30 PM', course: 'IGCSE Mathematics', room: 'Room 305', color: 'border-orange-500' },
+const BORDER_COLORS = [
+  'border-emerald-500',
+  'border-sky-500',
+  'border-violet-500',
+  'border-orange-500',
+  'border-pink-500',
+  'border-amber-500',
+  'border-teal-500',
+  'border-rose-500',
 ]
 
 const COURSE_COLORS = [
@@ -117,6 +111,52 @@ export default async function TeacherDashboard() {
         },
       })
     : 0
+
+  // Weekly participation from Attendance records
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+  const now = new Date()
+  // Find Monday of current week
+  const dayOfWeek = now.getDay() // 0=Sun
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 7)
+
+  const courseIds = courses.map((c) => c.id)
+
+  const weekAttendance = courseIds.length > 0
+    ? await prisma.attendance.findMany({
+        where: {
+          courseId: { in: courseIds },
+          date: { gte: monday, lt: sunday },
+        },
+        select: { date: true, status: true },
+      })
+    : []
+
+  // Build participation per day (Mon-Sun)
+  const PARTICIPATION = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    const dayKey = d.toISOString().slice(0, 10)
+    const dayRecords = weekAttendance.filter(
+      (a) => new Date(a.date).toISOString().slice(0, 10) === dayKey
+    )
+    const total = dayRecords.length
+    const present = dayRecords.filter((a) => a.status === 'PRESENT').length
+    return {
+      day: DAY_NAMES[(monday.getDay() + i) % 7],
+      pct: total > 0 ? Math.round((present / total) * 100) : 0,
+    }
+  })
+
+  // Build "Your Courses" for sidebar (replaces fake schedule)
+  const YOUR_COURSES = courses.map((c, i) => ({
+    course: c.name,
+    location: c.location || 'No location set',
+    students: c._count.enrollments,
+    color: BORDER_COLORS[i % BORDER_COLORS.length],
+  }))
 
   // Recent notifications
   const notifications = await prisma.notification.findMany({
@@ -294,17 +334,17 @@ export default async function TeacherDashboard() {
 
       {/* ── Right Sidebar ────────────────────────────────── */}
       <aside className="w-[280px] shrink-0 space-y-5">
-        {/* Today's Schedule */}
+        {/* Your Courses */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-sky-500" /> Today&apos;s Schedule
+            <Clock className="w-4 h-4 text-sky-500" /> Your Courses
           </h3>
           <div className="space-y-2.5">
-            {SCHEDULE.map((s, i) => (
+            {YOUR_COURSES.map((s, i) => (
               <div key={i} className={`border-l-[3px] ${s.color} pl-3 py-1.5`}>
-                <p className="text-[11px] text-gray-400 font-medium">{s.time}</p>
                 <p className="text-sm font-medium text-gray-900">{s.course}</p>
-                <p className="text-[11px] text-gray-400">{s.room}</p>
+                <p className="text-[11px] text-gray-400">{s.location}</p>
+                <p className="text-[11px] text-gray-500 font-medium">{s.students} students</p>
               </div>
             ))}
           </div>

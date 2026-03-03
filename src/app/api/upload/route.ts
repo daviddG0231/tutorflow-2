@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     const description = (formData.get("description") as string) || undefined;
     const fileType = formData.get("fileType") as string | null;
     const groupId = (formData.get("groupId") as string) || null;
+    const moduleId = (formData.get("moduleId") as string) || null;
 
     // Validate required fields
     if (!file || !courseId || !title || !fileType) {

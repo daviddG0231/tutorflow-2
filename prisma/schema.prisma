@@ -88,6 +88,7 @@ model Course {
   // Relations
   teacher       User           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   enrollments   Enrollment[]
+  modules       Module[]
   contents      Content[]
   assignments   Assignment[]
   quizzes       Quiz[]
@@ -117,10 +118,25 @@ model Enrollment {
   @@index([courseId])
 }
 
+// Module — a section/chapter within a course
+model Module {
+  id        String   @id @default(cuid())
+  courseId   String
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  contents Content[]
+
+  @@index([courseId])
+}
+
 // Content — learning materials (videos, PDFs, etc.)
 model Content {
   id          String   @id @default(cuid())
   courseId    String
+  moduleId   String?
   groupId    String?
   title       String
   description String?
@@ -129,9 +145,11 @@ model Content {
   createdAt   DateTime @default(now())
 
   course Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module Module?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   group  CourseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   @@index([courseId])
+  @@index([moduleId])
   @@index([groupId])
 }
 
