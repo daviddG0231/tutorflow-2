@@ -11,14 +11,20 @@ import {
   Lightbulb,
   Circle,
   Loader2,
+  X,
+  Pencil,
+  Check,
 } from 'lucide-react';
 
-const modules = [
-  { name: 'Cell Structure & Organization', resources: 4 },
-  { name: 'Movement In & Out of Cells', resources: 3 },
-  { name: 'Biological Molecules', resources: 2 },
-  { name: 'Enzymes', resources: 5 },
-  { name: 'Plant Nutrition', resources: 1 },
+interface Module {
+  name: string;
+  resources: number;
+}
+
+const defaultModules: Module[] = [
+  { name: 'Cell Structure & Organization', resources: 0 },
+  { name: 'Movement In & Out of Cells', resources: 0 },
+  { name: 'Biological Molecules', resources: 0 },
 ];
 
 const studentGroups = [
@@ -33,6 +39,38 @@ export default function CreateCoursePage() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [courseModules, setCourseModules] = useState<Module[]>(defaultModules);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [newModuleName, setNewModuleName] = useState('');
+  const [showAddInput, setShowAddInput] = useState(false);
+
+  const addModule = () => {
+    if (newModuleName.trim()) {
+      setCourseModules([...courseModules, { name: newModuleName.trim(), resources: 0 }]);
+      setNewModuleName('');
+      setShowAddInput(false);
+    }
+  };
+
+  const removeModule = (idx: number) => {
+    setCourseModules(courseModules.filter((_, i) => i !== idx));
+  };
+
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setEditingName(courseModules[idx].name);
+  };
+
+  const saveEdit = () => {
+    if (editingIdx !== null && editingName.trim()) {
+      const updated = [...courseModules];
+      updated[editingIdx] = { ...updated[editingIdx], name: editingName.trim() };
+      setCourseModules(updated);
+    }
+    setEditingIdx(null);
+    setEditingName('');
+  };
 
   async function handlePublish() {
     if (!name.trim()) {
@@ -133,32 +171,72 @@ export default function CreateCoursePage() {
 
           {/* Module list */}
           <div className="flex flex-col gap-1">
-            {modules.map((mod, i) => (
+            {courseModules.map((mod, i) => (
               <div
                 key={i}
                 className="flex items-center gap-2 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors"
               >
                 <GripVertical className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-gray-700 truncate">
-                    <span className="font-medium text-gray-500">
-                      {i + 1}.
-                    </span>{' '}
-                    {mod.name}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {mod.resources} Resources
-                  </p>
-                </div>
+                {editingIdx === i ? (
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                      className="flex-1 px-2 py-1 text-sm border border-sky-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 text-gray-900"
+                      autoFocus
+                    />
+                    <button onClick={saveEdit} className="p-1 text-green-500 hover:bg-green-50 rounded">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="min-w-0 flex-1 flex items-center gap-1">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-gray-700 truncate">
+                        <span className="font-medium text-gray-500">{i + 1}.</span>{' '}
+                        {mod.name}
+                      </p>
+                      <p className="text-xs text-gray-400">{mod.resources} Resources</p>
+                    </div>
+                    <button onClick={() => startEdit(i)} className="p-1 text-gray-400 hover:text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => removeModule(i)} className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
           {/* Add module */}
-          <button className="flex items-center gap-2 text-sm font-medium text-sky-500 hover:text-sky-600 transition-colors px-2">
-            <Plus className="w-4 h-4" />
-            Add New Module
-          </button>
+          {showAddInput ? (
+            <div className="flex items-center gap-2 px-2">
+              <input
+                type="text"
+                value={newModuleName}
+                onChange={(e) => setNewModuleName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addModule()}
+                placeholder="Module name..."
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-gray-900 placeholder:text-gray-400"
+                autoFocus
+              />
+              <button onClick={addModule} className="p-2 text-white bg-sky-500 rounded-lg hover:bg-sky-600 transition-colors">
+                <Check className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setShowAddInput(false); setNewModuleName(''); }} className="p-2 text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setShowAddInput(true)} className="flex items-center gap-2 text-sm font-medium text-sky-500 hover:text-sky-600 transition-colors px-2">
+              <Plus className="w-4 h-4" />
+              Add New Module
+            </button>
+          )}
 
           {/* Teacher tip */}
           <div className="mt-auto border border-sky-200 bg-sky-50 rounded-lg p-3">
