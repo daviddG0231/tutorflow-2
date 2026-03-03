@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import EnrollmentActions from './EnrollmentActions'
 import {
   Users,
   ClipboardList,
@@ -184,6 +185,7 @@ export default async function TeacherCourseDetailPage({
                   <th className="px-5 py-3 font-medium">Email</th>
                   <th className="px-5 py-3 font-medium">Enrolled</th>
                   <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,6 +215,9 @@ export default async function TeacherCourseDetailPage({
                         >
                           {enrollment.status}
                         </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <EnrollmentActions enrollmentId={enrollment.id} status={enrollment.status} />
                       </td>
                     </tr>
                   )
