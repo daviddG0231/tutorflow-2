@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/content/[contentId]/route.ts — Delete content
 //

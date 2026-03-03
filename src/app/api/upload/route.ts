@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/upload/route.ts — File upload via Cloudinary
 //

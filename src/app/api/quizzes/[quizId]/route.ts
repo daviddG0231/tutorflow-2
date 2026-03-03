@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/quizzes/[quizId]/route.ts — Single quiz detail + delete
 // ============================================================

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/courses/[courseId]/route.ts — Single course operations
 //

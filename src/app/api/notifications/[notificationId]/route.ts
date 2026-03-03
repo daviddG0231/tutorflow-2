@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/notifications/[notificationId]/route.ts — Mark single notification as read
 //

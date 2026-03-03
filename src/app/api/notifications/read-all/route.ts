@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/notifications/read-all/route.ts — Mark all notifications as read
 //

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/quizzes/[quizId]/grades/route.ts — Batch grade update
 // ============================================================

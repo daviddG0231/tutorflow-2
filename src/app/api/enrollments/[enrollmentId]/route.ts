@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/enrollments/[enrollmentId]/route.ts — Approve/reject enrollment
 //

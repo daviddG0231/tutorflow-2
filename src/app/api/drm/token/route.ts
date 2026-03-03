@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/drm/token/route.ts — DRM License Token API
 //

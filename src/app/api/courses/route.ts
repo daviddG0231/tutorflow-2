@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/courses/route.ts — Course CRUD (list + create)
 //

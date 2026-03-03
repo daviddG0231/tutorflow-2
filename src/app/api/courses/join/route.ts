@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/courses/join/route.ts — Student joins a course
 //

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // ============================================================
 // api/auth/[...nextauth]/route.ts — NextAuth API handler
 //
