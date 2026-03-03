@@ -10,12 +10,10 @@ import {
   MessageCircle,
   Clock,
   Users,
-  AlertTriangle,
-  Calendar,
-  ArrowUpRight,
 } from 'lucide-react'
 import CourseContentTree from './CourseContentTree'
 import JoinCourseBar from './JoinCourseBar'
+import AssignmentCard from './AssignmentCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,11 +87,6 @@ export default async function StudentCourseView({
   ).length
   const progressPercent =
     totalAssignments > 0 ? Math.round((submittedCount / totalAssignments) * 100) : 0
-
-  // Pending assignments (no submission yet, not past deadline by too much)
-  const pendingAssignments = course.assignments.filter(
-    (a) => a.submissions.length === 0
-  )
 
   // Upcoming deadlines (next 3 assignments with future deadlines)
   const now = new Date()
@@ -204,64 +197,36 @@ export default async function StudentCourseView({
             </>
           )}
 
-          {/* Pending Assignments */}
+          {/* Assignments */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Pending Assignments</h3>
-            {pendingAssignments.length === 0 ? (
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Assignments</h3>
+            {course.assignments.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <p className="text-sm text-gray-400">All assignments submitted! 🎉</p>
+                <p className="text-sm text-gray-400">No assignments yet.</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {pendingAssignments.map((assignment) => {
-                  const isUrgent =
-                    assignment.deadline.getTime() - now.getTime() < 3 * 24 * 60 * 60 * 1000
-                  return (
-                    <div
-                      key={assignment.id}
-                      className="bg-white rounded-xl border border-gray-200 shadow-sm p-5"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {isUrgent && (
-                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-600 uppercase">
-                                Urgent
-                              </span>
-                            )}
-                            {isUrgent && (
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3" /> Due soon
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-semibold text-gray-900 mt-2">
-                            {assignment.title}
-                          </p>
-                          {assignment.description && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {assignment.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" /> Due:{' '}
-                              {assignment.deadline.toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </span>
-                            <span>{assignment.totalMarks} Points</span>
-                          </div>
-                        </div>
-                        <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 hover:bg-orange-600 text-white shrink-0 ml-4">
-                          Submit Work <ArrowUpRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
+                {course.assignments.map((assignment) => (
+                  <AssignmentCard
+                    key={assignment.id}
+                    assignment={{
+                      id: assignment.id,
+                      title: assignment.title,
+                      description: assignment.description,
+                      deadline: assignment.deadline.toISOString(),
+                      totalMarks: assignment.totalMarks,
+                    }}
+                    submission={
+                      assignment.submissions[0]
+                        ? {
+                            id: assignment.submissions[0].id,
+                            grade: assignment.submissions[0].grade,
+                            submittedAt: assignment.submissions[0].submittedAt.toISOString(),
+                          }
+                        : null
+                    }
+                  />
+                ))}
               </div>
             )}
           </div>

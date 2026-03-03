@@ -140,7 +140,7 @@ export default function GradingPanel({
             onChange={(e) => { setFeedback(e.target.value); setSaved(false); }}
             placeholder="Write a constructive comment..."
             rows={4}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 resize-none"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 resize-none"
           />
         </div>
 

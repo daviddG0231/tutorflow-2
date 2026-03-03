@@ -20,7 +20,7 @@ export default function JoinCourseBar() {
         placeholder="e.g. BIO-2026-A1"
         value={joinCode}
         onChange={(e) => setJoinCode(e.target.value)}
-        className="px-3 py-2 text-sm border border-gray-200 rounded-lg w-44 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        className="px-3 py-2 text-sm border border-gray-200 rounded-lg w-44 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400"
       />
       <button className="px-4 py-2 text-sm font-medium rounded-lg bg-sky-500 hover:bg-sky-600 text-white">
         Join Course

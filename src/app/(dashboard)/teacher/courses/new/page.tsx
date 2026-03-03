@@ -320,7 +320,7 @@ export default function CreateCoursePage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. IGCSE Biology Extended 2024"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow"
                 />
               </div>
 
@@ -331,7 +331,7 @@ export default function CreateCoursePage() {
                 </label>
                 <select
                   defaultValue="bio"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow"
                 >
                   <option value="bio">Biology (0610)</option>
                   <option value="chem">Chemistry (0620)</option>
@@ -351,7 +351,7 @@ export default function CreateCoursePage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="A comprehensive IGCSE course covering all core and supplement topics..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow resize-none"
                 />
               </div>
 

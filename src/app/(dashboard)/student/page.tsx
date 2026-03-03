@@ -129,7 +129,7 @@ export default function StudentDashboard() {
             placeholder="Enter course code..."
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono tracking-wider text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             maxLength={20}
           />
           <button
