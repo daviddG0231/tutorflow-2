@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Loader2, CalendarDays, FileText, Hash } from 'lucide-react'
+import { ArrowLeft, Loader2, CalendarDays, FileText, Hash, Upload, X } from 'lucide-react'
 
 export default function NewAssignmentPage() {
   const router = useRouter()
@@ -15,6 +15,17 @@ export default function NewAssignmentPage() {
   const [totalMarks, setTotalMarks] = useState('100')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(prev => [...prev, ...Array.from(e.target.files!)])
+    }
+  }
+
+  const removeFile = (idx: number) => {
+    setFiles(files.filter((_, i) => i !== idx))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -119,6 +130,43 @@ export default function NewAssignmentPage() {
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
             />
           </div>
+        </div>
+
+        {/* File attachments */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <Upload className="w-4 h-4 inline mr-1.5 text-gray-400" />
+            Attachments (optional)
+          </label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-sky-400 transition-colors">
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+            />
+            <label htmlFor="file-upload" className="cursor-pointer">
+              <Upload className="w-6 h-6 mx-auto text-gray-400 mb-1" />
+              <p className="text-sm text-gray-500">Click to upload files</p>
+              <p className="text-xs text-gray-400 mt-0.5">PDF, DOC, PPT, images up to 20MB</p>
+            </label>
+          </div>
+          {files.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {files.map((file, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
+                  <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span className="truncate flex-1">{file.name}</span>
+                  <span className="text-xs text-gray-400 shrink-0">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
+                  <button type="button" onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3 pt-2">

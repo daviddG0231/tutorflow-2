@@ -21,7 +21,6 @@ export default function Sidebar() {
     ? [
         { label: 'Dashboard', href: '/student', icon: LayoutDashboard },
         { label: 'My Courses', href: '/student/courses', icon: BookOpen },
-        { label: 'Create Course', href: '/teacher/courses/new', icon: PlusCircle },
         { label: 'Assignments', href: '/student/assignments', icon: ClipboardList },
       ]
     : navItems
