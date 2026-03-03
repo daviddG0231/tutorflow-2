@@ -316,23 +316,6 @@ export default function CreateCoursePage() {
                 />
               </div>
 
-              {/* IGCSE Subject & Code */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  IGCSE Subject &amp; Code
-                </label>
-                <select
-                  defaultValue="bio"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow"
-                >
-                  <option value="bio">Biology (0610)</option>
-                  <option value="chem">Chemistry (0620)</option>
-                  <option value="phys">Physics (0625)</option>
-                  <option value="math">Mathematics (0580)</option>
-                  <option value="eng">English Language (0500)</option>
-                </select>
-              </div>
-
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
