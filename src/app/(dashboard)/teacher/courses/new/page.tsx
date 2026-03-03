@@ -27,11 +27,10 @@ const defaultModules: Module[] = [
   { name: 'Biological Molecules', resources: 0 },
 ];
 
-const studentGroups = [
-  { label: 'Year 11 - Biology Alpha', checked: true },
-  { label: 'Year 11 - Biology Beta', checked: true },
-  { label: 'IGCSE Fast-Track Summer', checked: false },
-];
+interface StudentGroup {
+  label: string;
+  checked: boolean;
+}
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -44,6 +43,48 @@ export default function CreateCoursePage() {
   const [editingName, setEditingName] = useState('');
   const [newModuleName, setNewModuleName] = useState('');
   const [showAddInput, setShowAddInput] = useState(false);
+  const [groups, setGroups] = useState<StudentGroup[]>([
+    { label: 'Year 11 - Biology Alpha', checked: true },
+    { label: 'Year 11 - Biology Beta', checked: true },
+    { label: 'IGCSE Fast-Track Summer', checked: false },
+  ]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [showAddGroup, setShowAddGroup] = useState(false);
+  const [editingGroupIdx, setEditingGroupIdx] = useState<number | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState('');
+
+  const toggleGroup = (idx: number) => {
+    const updated = [...groups];
+    updated[idx] = { ...updated[idx], checked: !updated[idx].checked };
+    setGroups(updated);
+  };
+
+  const addGroup = () => {
+    if (newGroupName.trim()) {
+      setGroups([...groups, { label: newGroupName.trim(), checked: true }]);
+      setNewGroupName('');
+      setShowAddGroup(false);
+    }
+  };
+
+  const removeGroup = (idx: number) => {
+    setGroups(groups.filter((_, i) => i !== idx));
+  };
+
+  const startEditGroup = (idx: number) => {
+    setEditingGroupIdx(idx);
+    setEditingGroupName(groups[idx].label);
+  };
+
+  const saveEditGroup = () => {
+    if (editingGroupIdx !== null && editingGroupName.trim()) {
+      const updated = [...groups];
+      updated[editingGroupIdx] = { ...updated[editingGroupIdx], label: editingGroupName.trim() };
+      setGroups(updated);
+    }
+    setEditingGroupIdx(null);
+    setEditingGroupName('');
+  };
 
   const addModule = () => {
     if (newModuleName.trim()) {
@@ -394,21 +435,67 @@ export default function CreateCoursePage() {
                 <h3 className="text-sm font-medium text-gray-700 mb-3">
                   Student Groups
                 </h3>
-                <div className="flex flex-col gap-2.5">
-                  {studentGroups.map((g, i) => (
-                    <label
-                      key={i}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        defaultChecked={g.checked}
-                        className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500"
-                      />
-                      <span className="text-sm text-gray-700">{g.label}</span>
-                    </label>
+                <div className="flex flex-col gap-2">
+                  {groups.map((g, i) => (
+                    <div key={i} className="flex items-center gap-2 group">
+                      {editingGroupIdx === i ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <input
+                            type="text"
+                            value={editingGroupName}
+                            onChange={(e) => setEditingGroupName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && saveEditGroup()}
+                            className="flex-1 px-2 py-1 text-sm border border-sky-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 text-gray-900"
+                            autoFocus
+                          />
+                          <button onClick={saveEditGroup} className="p-1 text-green-500 hover:bg-green-50 rounded">
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="checkbox"
+                            checked={g.checked}
+                            onChange={() => toggleGroup(i)}
+                            className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500"
+                          />
+                          <span className="text-sm text-gray-700 flex-1">{g.label}</span>
+                          <button onClick={() => startEditGroup(i)} className="p-1 text-gray-400 hover:text-sky-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => removeGroup(i)} className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   ))}
                 </div>
+                {showAddGroup ? (
+                  <div className="flex items-center gap-2 mt-3">
+                    <input
+                      type="text"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addGroup()}
+                      placeholder="Group name..."
+                      className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-gray-900 placeholder:text-gray-400"
+                      autoFocus
+                    />
+                    <button onClick={addGroup} className="p-1.5 text-white bg-sky-500 rounded-lg hover:bg-sky-600">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => { setShowAddGroup(false); setNewGroupName(''); }} className="p-1.5 text-gray-400 hover:text-gray-600">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowAddGroup(true)} className="flex items-center gap-1.5 text-xs font-medium text-sky-500 hover:text-sky-600 mt-3">
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Group
+                  </button>
+                )}
               </div>
             </div>
           </div>
