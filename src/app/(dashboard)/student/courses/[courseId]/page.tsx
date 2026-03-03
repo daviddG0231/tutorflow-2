@@ -1,79 +1,133 @@
-'use client'
-
-import { useState } from 'react'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
 import {
   ChevronRight,
-  ChevronDown,
   FileText,
   Play,
-  Plus,
   Download,
   MessageCircle,
   Clock,
   Users,
-  BookOpen,
-  Circle,
   AlertTriangle,
   Calendar,
   ArrowUpRight,
 } from 'lucide-react'
+import CourseContentTree from './CourseContentTree'
+import JoinCourseBar from './JoinCourseBar'
 
-// ── Mock Data ──────────────────────────────────────────────
+export const dynamic = 'force-dynamic'
 
-const courseUnits = [
-  {
-    id: 'u1',
-    title: 'Unit 1: Characteristics & Classification',
-    topics: [
-      { id: '1.1', title: '1.1 Characteristics of Living Organisms', done: true },
-      { id: '1.2', title: '1.2 Binomial System', active: true },
-      { id: '1.3', title: '1.3 Classification Keys', isNew: true },
-      { id: '1.4', title: '1.4 Vertebrates & Invertebrates' },
-    ],
-  },
-  {
-    id: 'u2',
-    title: 'Unit 2: Organisation of the Organism',
-    topics: [
-      { id: '2.1', title: '2.1 Cell Structure' },
-      { id: '2.2', title: '2.2 Specialised Cells' },
-      { id: '2.3', title: '2.3 Levels of Organisation' },
-    ],
-  },
-  {
-    id: 'u3',
-    title: 'Unit 3: Movement In & Out of Cells',
-    topics: [
-      { id: '3.1', title: '3.1 Diffusion' },
-      { id: '3.2', title: '3.2 Osmosis' },
-      { id: '3.3', title: '3.3 Active Transport' },
-    ],
-  },
-]
+export default async function StudentCourseView({
+  params,
+}: {
+  params: Promise<{ courseId: string }>
+}) {
+  const { courseId } = await params
+  const session = await getServerSession(authOptions)
 
-const deadlines = [
-  { date: 'Mar 5', title: 'Cell Division Worksheet', color: 'border-red-400' },
-  { date: 'Mar 8', title: 'Classification Poster', color: 'border-orange-400' },
-  { date: 'Mar 14', title: 'Unit 1 Assessment', color: 'border-sky-400' },
-]
+  if (!session?.user?.id) {
+    redirect('/login')
+  }
 
-const groupMembers = [
-  { name: 'Sarah K.', initials: 'SK', color: 'bg-pink-400' },
-  { name: 'James M.', initials: 'JM', color: 'bg-sky-400' },
-  { name: 'Aisha R.', initials: 'AR', color: 'bg-emerald-400' },
-  { name: 'David L.', initials: 'DL', color: 'bg-violet-400' },
-]
+  const studentId = session.user.id
 
-// ── Page ────────────────────────────────────────────────────
+  // Fetch course with relations
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      contents: { orderBy: { createdAt: 'asc' } },
+      assignments: {
+        orderBy: { deadline: 'asc' },
+        include: {
+          submissions: {
+            where: { studentId },
+          },
+        },
+      },
+    },
+  })
 
-export default function StudentCourseView() {
-  const [expandedUnits, setExpandedUnits] = useState<string[]>(['u1'])
-  const [joinCode, setJoinCode] = useState('')
-
-  const toggleUnit = (id: string) =>
-    setExpandedUnits((prev) =>
-      prev.includes(id) ? prev.filter((u) => u !== id) : [...prev, id]
+  if (!course) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Course Not Found</h1>
+          <p className="text-sm text-gray-500 mt-2">This course does not exist or has been removed.</p>
+        </div>
+      </div>
     )
+  }
+
+  // Check enrollment
+  const enrollment = await prisma.enrollment.findUnique({
+    where: {
+      studentId_courseId: { studentId, courseId },
+    },
+  })
+
+  if (!enrollment || enrollment.status !== 'APPROVED') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Not Enrolled</h1>
+          <p className="text-sm text-gray-500 mt-2">
+            {enrollment?.status === 'PENDING'
+              ? 'Your enrollment is pending approval.'
+              : 'You are not enrolled in this course.'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Calculate progress
+  const totalAssignments = course.assignments.length
+  const submittedCount = course.assignments.filter(
+    (a) => a.submissions.length > 0
+  ).length
+  const progressPercent =
+    totalAssignments > 0 ? Math.round((submittedCount / totalAssignments) * 100) : 0
+
+  // Pending assignments (no submission yet, not past deadline by too much)
+  const pendingAssignments = course.assignments.filter(
+    (a) => a.submissions.length === 0
+  )
+
+  // Upcoming deadlines (next 3 assignments with future deadlines)
+  const now = new Date()
+  const upcomingDeadlines = course.assignments
+    .filter((a) => a.deadline > now)
+    .slice(0, 3)
+    .map((a, i) => ({
+      date: a.deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      title: a.title,
+      color: i === 0 ? 'border-red-400' : i === 1 ? 'border-orange-400' : 'border-sky-400',
+    }))
+
+  // Group content by fileType for the tree
+  const contentUnits = groupContentIntoUnits(course.contents)
+
+  // Average grade
+  const gradedSubmissions = course.assignments
+    .flatMap((a) => a.submissions)
+    .filter((s) => s.grade !== null)
+  const avgGrade =
+    gradedSubmissions.length > 0
+      ? Math.round(
+          gradedSubmissions.reduce((sum, s) => sum + (s.grade ?? 0), 0) /
+            gradedSubmissions.length
+        )
+      : null
+
+  // Static group members (no DB model for this)
+  const groupMembers = [
+    { name: 'Sarah K.', initials: 'SK', color: 'bg-pink-400' },
+    { name: 'James M.', initials: 'JM', color: 'bg-sky-400' },
+    { name: 'Aisha R.', initials: 'AR', color: 'bg-emerald-400' },
+    { name: 'David L.', initials: 'DL', color: 'bg-violet-400' },
+  ]
 
   return (
     <div className="space-y-5">
@@ -81,14 +135,17 @@ export default function StudentCourseView() {
       <div className="flex items-center gap-2 text-xs text-gray-400 font-medium tracking-wide">
         <span className="hover:text-sky-500 cursor-pointer">MY COURSES</span>
         <ChevronRight className="w-3 h-3" />
-        <span className="text-gray-700">IGCSE BIOLOGY 0610</span>
+        <span className="text-gray-700">{course.name.toUpperCase()}</span>
       </div>
 
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cell Biology &amp; Organisms</h1>
-          <p className="text-sm text-gray-500 mt-0.5">IGCSE Biology 0610 • Cambridge International</p>
+          <h1 className="text-2xl font-bold text-gray-900">{course.name}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {course.courseCode}
+            {course.description ? ` • ${course.description}` : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700">
@@ -101,155 +158,115 @@ export default function StudentCourseView() {
       </div>
 
       {/* Join New Subject Bar */}
-      <div className="flex items-center gap-4 p-4 bg-sky-50 border border-sky-200 rounded-xl">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-sky-500 text-white shrink-0">
-          <Plus className="w-5 h-5" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-900">Join a New Subject</p>
-          <p className="text-xs text-gray-500">Enter the enrollment code from your teacher</p>
-        </div>
-        <input
-          type="text"
-          placeholder="e.g. BIO-2026-A1"
-          value={joinCode}
-          onChange={(e) => setJoinCode(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg w-44 focus:outline-none focus:ring-2 focus:ring-sky-400"
-        />
-        <button className="px-4 py-2 text-sm font-medium rounded-lg bg-sky-500 hover:bg-sky-600 text-white">
-          Join Course
-        </button>
-      </div>
+      <JoinCourseBar />
 
       {/* 3-Column Layout */}
       <div className="flex gap-5">
         {/* ── Left: Course Content Tree ── */}
         <div className="w-[250px] shrink-0">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-sky-500" /> Course Content
-              </h2>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {courseUnits.map((unit) => {
-                const open = expandedUnits.includes(unit.id)
-                return (
-                  <div key={unit.id}>
-                    <button
-                      onClick={() => toggleUnit(unit.id)}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                    >
-                      {open ? (
-                        <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                      )}
-                      <span className="leading-tight">{unit.title}</span>
-                    </button>
-                    {open && (
-                      <div className="pb-2">
-                        {unit.topics.map((t) => (
-                          <button
-                            key={t.id}
-                            className={`flex items-center gap-2 w-full pl-9 pr-4 py-2 text-xs text-left transition-colors ${
-                              t.active
-                                ? 'bg-sky-50 text-sky-600 font-semibold border-r-2 border-sky-500'
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            {(t.active || t.isNew) && (
-                              <Circle className="w-2 h-2 fill-sky-500 text-sky-500 shrink-0" />
-                            )}
-                            {t.done && (
-                              <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
-                            )}
-                            {!t.active && !t.isNew && !t.done && <span className="w-2 shrink-0" />}
-                            {t.title}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <CourseContentTree units={contentUnits} />
         </div>
 
         {/* ── Center: Active Module ── */}
         <div className="flex-1 space-y-5">
           {/* Module Heading */}
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-gray-900">Unit 1.2: Binomial System</h2>
-            <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-sky-100 text-sky-600">
-              Active Module
-            </span>
-          </div>
+          {course.contents.length > 0 && (
+            <>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {course.contents[0].title}
+                </h2>
+                <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-sky-100 text-sky-600">
+                  Active Module
+                </span>
+              </div>
 
-          {/* Content Cards */}
-          <div className="grid grid-cols-3 gap-4">
-            {/* Video Tutorial */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-sky-50 text-sky-500 mb-3">
-                <Play className="w-5 h-5" />
+              {/* Content Cards */}
+              <div className="grid grid-cols-3 gap-4">
+                {course.contents.slice(0, 3).map((content) => {
+                  const iconConfig = getContentIcon(content.fileType)
+                  return (
+                    <div
+                      key={content.id}
+                      className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      <div
+                        className={`flex items-center justify-center w-10 h-10 rounded-lg ${iconConfig.bg} ${iconConfig.text} mb-3`}
+                      >
+                        {iconConfig.icon}
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800">{content.title}</p>
+                      <p className="text-xs text-gray-400 mt-1">{content.fileType}</p>
+                    </div>
+                  )
+                })}
               </div>
-              <p className="text-sm font-semibold text-gray-800">Video Tutorial</p>
-              <p className="text-xs text-gray-400 mt-1">18 mins • HD</p>
-            </div>
-            {/* Handout */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-50 text-orange-500 mb-3">
-                <FileText className="w-5 h-5" />
-              </div>
-              <p className="text-sm font-semibold text-gray-800">Handout</p>
-              <p className="text-xs text-gray-400 mt-1">12 Pages • PDF</p>
-            </div>
-            {/* Live Recording */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-50 text-violet-500 mb-3">
-                <Play className="w-5 h-5" />
-              </div>
-              <p className="text-sm font-semibold text-gray-800">Live Recording</p>
-              <p className="text-xs text-gray-400 mt-1">45 mins • Recorded</p>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Pending Assignments */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Pending Assignments</h3>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-600 uppercase">
-                      Urgent
-                    </span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> Due soon
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-900 mt-2">
-                    Classification of Living Organisms — Worksheet
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Complete the worksheet covering dichotomous keys and the five-kingdom system.
-                  </p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" /> Due: Mar 5, 2026
-                    </span>
-                    <span>30 Points</span>
-                  </div>
-                </div>
-                <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 hover:bg-orange-600 text-white shrink-0 ml-4">
-                  Submit Work <ArrowUpRight className="w-4 h-4" />
-                </button>
+            {pendingAssignments.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <p className="text-sm text-gray-400">All assignments submitted! 🎉</p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingAssignments.map((assignment) => {
+                  const isUrgent =
+                    assignment.deadline.getTime() - now.getTime() < 3 * 24 * 60 * 60 * 1000
+                  return (
+                    <div
+                      key={assignment.id}
+                      className="bg-white rounded-xl border border-gray-200 shadow-sm p-5"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {isUrgent && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-600 uppercase">
+                                Urgent
+                              </span>
+                            )}
+                            {isUrgent && (
+                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" /> Due soon
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-semibold text-gray-900 mt-2">
+                            {assignment.title}
+                          </p>
+                          {assignment.description && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {assignment.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" /> Due:{' '}
+                              {assignment.deadline.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </span>
+                            <span>{assignment.totalMarks} Points</span>
+                          </div>
+                        </div>
+                        <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 hover:bg-orange-600 text-white shrink-0 ml-4">
+                          Submit Work <ArrowUpRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Past Papers Archive */}
+          {/* Past Papers Archive (static placeholder) */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Past Papers Archive</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -296,24 +313,31 @@ export default function StudentCourseView() {
                     fill="none"
                     stroke="#0ea5e9"
                     strokeWidth="3"
-                    strokeDasharray="68, 100"
+                    strokeDasharray={`${progressPercent}, 100`}
                   />
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-800">
-                  68%
+                  {progressPercent}%
                 </span>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Estimated Grade</p>
-                <p className="text-lg font-bold text-sky-600">A*</p>
+                <p className="text-xs text-gray-500">Average Grade</p>
+                <p className="text-lg font-bold text-sky-600">
+                  {avgGrade !== null ? `${avgGrade}%` : '—'}
+                </p>
               </div>
             </div>
             <div className="text-xs text-gray-500 flex items-center justify-between">
               <span>Assignments</span>
-              <span className="font-semibold text-gray-700">12 / 15</span>
+              <span className="font-semibold text-gray-700">
+                {submittedCount} / {totalAssignments}
+              </span>
             </div>
             <div className="mt-1.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-sky-500 rounded-full" style={{ width: '80%' }} />
+              <div
+                className="h-full bg-sky-500 rounded-full"
+                style={{ width: `${totalAssignments > 0 ? Math.round((submittedCount / totalAssignments) * 100) : 0}%` }}
+              />
             </div>
           </div>
 
@@ -321,7 +345,10 @@ export default function StudentCourseView() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-3">Upcoming Deadlines</h3>
             <div className="space-y-3">
-              {deadlines.map((d, i) => (
+              {upcomingDeadlines.length === 0 && (
+                <p className="text-xs text-gray-400">No upcoming deadlines.</p>
+              )}
+              {upcomingDeadlines.map((d, i) => (
                 <div key={i} className={`flex items-center gap-3 pl-3 border-l-2 ${d.color}`}>
                   <div>
                     <p className="text-[11px] font-semibold text-gray-400">{d.date}</p>
@@ -332,7 +359,7 @@ export default function StudentCourseView() {
             </div>
           </div>
 
-          {/* Group Members */}
+          {/* Group Members (static placeholder) */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-3">Biology Group A</h3>
             <div className="space-y-2.5">
@@ -367,4 +394,41 @@ export default function StudentCourseView() {
       </div>
     </div>
   )
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function getContentIcon(fileType: string) {
+  switch (fileType) {
+    case 'VIDEO':
+      return { icon: <Play className="w-5 h-5" />, bg: 'bg-sky-50', text: 'text-sky-500' }
+    case 'PDF':
+    case 'DOCUMENT':
+      return { icon: <FileText className="w-5 h-5" />, bg: 'bg-orange-50', text: 'text-orange-500' }
+    case 'SLIDE':
+      return { icon: <FileText className="w-5 h-5" />, bg: 'bg-violet-50', text: 'text-violet-500' }
+    default:
+      return { icon: <FileText className="w-5 h-5" />, bg: 'bg-gray-50', text: 'text-gray-500' }
+  }
+}
+
+function groupContentIntoUnits(
+  contents: { id: string; title: string; fileType: string; groupId: string | null }[]
+) {
+  // Group by groupId, or put ungrouped items in a "General" bucket
+  const groups = new Map<string, { id: string; title: string; items: { id: string; title: string; fileType: string }[] }>()
+
+  for (const c of contents) {
+    const key = c.groupId ?? '__general'
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        title: key === '__general' ? 'Course Materials' : `Group ${groups.size + 1}`,
+        items: [],
+      })
+    }
+    groups.get(key)!.items.push({ id: c.id, title: c.title, fileType: c.fileType })
+  }
+
+  return Array.from(groups.values())
 }

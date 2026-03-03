@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Eye,
@@ -8,6 +10,7 @@ import {
   RefreshCw,
   Lightbulb,
   Circle,
+  Loader2,
 } from 'lucide-react';
 
 const modules = [
@@ -25,12 +28,45 @@ const studentGroups = [
 ];
 
 export default function CreateCoursePage() {
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handlePublish() {
+    if (!name.trim()) {
+      setError('Course title is required.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to create course.');
+        return;
+      }
+      const course = await res.json();
+      router.push(`/teacher/courses/${course.id}`);
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)]">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
-          <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
           <div>
@@ -48,11 +84,23 @@ export default function CreateCoursePage() {
             <Eye className="w-4 h-4" />
             Preview
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
+          <button
+            onClick={handlePublish}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             Publish Course
           </button>
         </div>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
@@ -121,8 +169,8 @@ export default function CreateCoursePage() {
               </span>
             </div>
             <p className="text-xs text-sky-700 leading-relaxed">
-              Name your modules by IGCSE syllabus section numbers (e.g. "1.
-              Cell Structure") so students can cross-reference with the official
+              Name your modules by IGCSE syllabus section numbers (e.g. &quot;1.
+              Cell Structure&quot;) so students can cross-reference with the official
               syllabus guide.
             </p>
           </div>
@@ -150,7 +198,9 @@ export default function CreateCoursePage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="IGCSE Biology Extended 2024"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. IGCSE Biology Extended 2024"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow"
                 />
               </div>
@@ -179,7 +229,9 @@ export default function CreateCoursePage() {
                 </label>
                 <textarea
                   rows={3}
-                  defaultValue="A comprehensive IGCSE Biology Extended course covering all core and supplement topics for the 2024 examination series."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="A comprehensive IGCSE course covering all core and supplement topics..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-shadow resize-none"
                 />
               </div>
@@ -247,16 +299,15 @@ export default function CreateCoursePage() {
                   Enrollment Code
                 </h3>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl font-mono font-bold text-gray-900 tracking-wider">
-                    BIO-882
+                  <span className="text-2xl font-mono font-bold text-gray-400 tracking-wider">
+                    Auto-generated
                   </span>
-                  <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" disabled>
                     <RefreshCw className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
                 <p className="text-xs text-gray-400">
-                  Share this code with students to allow them to enrol in this
-                  course. Click refresh to generate a new code.
+                  An enrollment code will be auto-generated when you publish the course.
                 </p>
               </div>
 
@@ -298,15 +349,20 @@ export default function CreateCoursePage() {
             />
           ))}
         </div>
-        <span className="text-xs text-gray-400">Draft saved at 2:45 PM</span>
+        <span className="text-xs text-gray-400">Draft</span>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
+          <button onClick={() => router.back()} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
             Discard Changes
           </button>
           <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
             Save as Template
           </button>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">
+          <button
+            onClick={handlePublish}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             Publish Course
           </button>
         </div>
