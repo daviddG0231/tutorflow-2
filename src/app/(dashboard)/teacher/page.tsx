@@ -21,8 +21,8 @@ export const dynamic = 'force-dynamic'
 
 const QUICK_ACTIONS = [
   { title: 'New Course', desc: 'Set up a new IGCSE course with modules and materials.', icon: BookPlus, href: '/teacher/courses/new' },
-  { title: 'Create Assignment', desc: 'Design a new assignment with rubrics and deadlines.', icon: FilePlus2, href: '#' },
-  { title: 'Review Submissions', desc: 'Grade and provide feedback on student work.', icon: FileSearch, href: '#' },
+  { title: 'Create Assignment', desc: 'Design a new assignment with rubrics and deadlines.', icon: FilePlus2, href: '/teacher/assignments' },
+  { title: 'Review Submissions', desc: 'Grade and provide feedback on student work.', icon: FileSearch, href: '/teacher/assignments' },
 ]
 
 const PARTICIPATION = [
@@ -127,9 +127,9 @@ export default async function TeacherDashboard() {
 
   // Stats
   const STATS = [
-    { label: 'Students', value: totalStudents, bg: 'bg-sky-50', text: 'text-sky-600', icon: Users },
-    { label: 'Courses', value: courses.length, bg: 'bg-gray-900', text: 'text-white', icon: CalendarCheck },
-    { label: 'Grading', value: totalPendingCount, bg: 'bg-green-50', text: 'text-green-600', icon: ClipboardCheck },
+    { label: 'Students', value: totalStudents, bg: 'bg-sky-50', text: 'text-sky-600', icon: Users, href: '#' },
+    { label: 'Courses', value: courses.length, bg: 'bg-gray-900', text: 'text-white', icon: CalendarCheck, href: '/teacher/courses' },
+    { label: 'Grading', value: totalPendingCount, bg: 'bg-green-50', text: 'text-green-600', icon: ClipboardCheck, href: '/teacher/assignments' },
   ]
 
   // Build cohort data from real courses
@@ -202,16 +202,17 @@ export default async function TeacherDashboard() {
           </div>
           <div className="flex gap-3">
             {STATS.map((s) => (
-              <div
+              <Link
                 key={s.label}
-                className={`${s.bg} ${s.text} rounded-xl px-4 py-3 flex items-center gap-3 min-w-[130px]`}
+                href={s.href}
+                className={`${s.bg} ${s.text} rounded-xl px-4 py-3 flex items-center gap-3 min-w-[130px] hover:opacity-90 transition`}
               >
                 <s.icon className="w-5 h-5 shrink-0" />
                 <div>
                   <p className="text-lg font-bold leading-tight">{s.value}</p>
                   <p className="text-[11px] opacity-80">{s.label}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -221,7 +222,7 @@ export default async function TeacherDashboard() {
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h2>
           <div className="grid grid-cols-3 gap-4">
             {QUICK_ACTIONS.map((a) => (
-              <a
+              <Link
                 key={a.title}
                 href={a.href}
                 className="group bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-sky-300 transition"
@@ -231,7 +232,7 @@ export default async function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-sky-600 transition">{a.title}</h3>
                 <p className="text-xs text-gray-500 mt-1 leading-relaxed">{a.desc}</p>
-              </a>
+              </Link>
             ))}
           </div>
         </section>
@@ -241,7 +242,7 @@ export default async function TeacherDashboard() {
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Active Cohorts</h2>
           <div className="grid grid-cols-2 gap-4">
             {COHORTS.map((c) => (
-              <div key={c.code} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <Link href={`/teacher/courses/${c.id}`} key={c.code} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-sky-300 transition block">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`${c.color} text-white text-[10px] font-bold px-2 py-0.5 rounded`}>
                     {c.code}
@@ -263,10 +264,10 @@ export default async function TeacherDashboard() {
                     <div className={`${c.color} h-full rounded-full transition-all`} style={{ width: `${c.progress}%` }} />
                   </div>
                 </div>
-                <Link href={`/teacher/courses/${c.id}`} className="text-sky-500 text-xs font-semibold hover:text-sky-700 transition flex items-center gap-1">
+                <span className="text-sky-500 text-xs font-semibold flex items-center gap-1">
                   Manage Course <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
+                </span>
+              </Link>
             ))}
           </div>
         </section>
