@@ -75,7 +75,7 @@ export default function StudentDashboard() {
       const res = await fetch('/api/courses/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: joinCode.trim() }),
+        body: JSON.stringify({ courseCode: joinCode.trim() }),
       })
       const data = await res.json()
       if (!res.ok) {

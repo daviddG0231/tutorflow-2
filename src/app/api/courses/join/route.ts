@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const joinCourseSchema = z.object({
-  courseCode: z.string().length(6, "Course code must be 6 characters"),
+  courseCode: z.string().min(1, "Course code is required"),
 });
 
 export async function POST(req: NextRequest) {
