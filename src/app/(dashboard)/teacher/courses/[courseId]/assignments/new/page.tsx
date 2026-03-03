@@ -42,7 +42,7 @@ export default function NewAssignmentPage() {
           courseId,
           title: title.trim(),
           description: description.trim() || undefined,
-          dueDate: new Date(dueDate).toISOString(),
+          deadline: new Date(dueDate).toISOString(),
           totalMarks: parseInt(totalMarks) || 100,
         }),
       })
