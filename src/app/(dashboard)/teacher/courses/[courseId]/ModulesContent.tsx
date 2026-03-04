@@ -61,6 +61,23 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
   });
   const [uploading, setUploading] = useState(false);
   const [viewingContent, setViewingContent] = useState<ContentItem | null>(null);
+  const [deletingContent, setDeletingContent] = useState<string | null>(null);
+
+  const deleteContent = async (contentId: string) => {
+    if (!confirm("Delete this content? It will also be removed from cloud storage.")) return;
+    setDeletingContent(contentId);
+    try {
+      const res = await fetch(`/api/content/${contentId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to delete");
+      } else {
+        await fetchModules();
+      }
+    } finally {
+      setDeletingContent(null);
+    }
+  };
 
   const fetchModules = useCallback(async () => {
     try {
@@ -317,11 +334,16 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
                     return (
                       <div
                         key={content.id}
-                        onClick={() => setViewingContent(content)}
-                        className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer"
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50 group"
                       >
-                        <span className="text-lg">{ft.emoji}</span>
-                        <div className="flex-1 min-w-0">
+                        <span
+                          className="text-lg cursor-pointer"
+                          onClick={() => setViewingContent(content)}
+                        >{ft.emoji}</span>
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => setViewingContent(content)}
+                        >
                           <span className="text-sm font-medium text-gray-900 hover:text-sky-600">
                             {content.title}
                           </span>
@@ -335,6 +357,14 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
                             month: "short",
                           })}
                         </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteContent(content.id); }}
+                          disabled={deletingContent === content.id}
+                          className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded"
+                          title="Delete content"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     );
                   })
