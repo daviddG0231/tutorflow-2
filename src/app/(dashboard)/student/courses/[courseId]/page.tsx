@@ -349,10 +349,10 @@ function getContentIcon(fileType: string) {
 }
 
 function groupContentIntoUnits(
-  contents: { id: string; title: string; fileType: string; groupId: string | null }[]
+  contents: { id: string; title: string; fileType: string; fileUrl: string | null; textContent: string | null; groupId: string | null }[]
 ) {
   // Group by groupId, or put ungrouped items in a "General" bucket
-  const groups = new Map<string, { id: string; title: string; items: { id: string; title: string; fileType: string }[] }>()
+  const groups = new Map<string, { id: string; title: string; items: { id: string; title: string; fileType: string; fileUrl?: string | null; textContent?: string | null }[] }>()
 
   for (const c of contents) {
     const key = c.groupId ?? '__general'
@@ -363,7 +363,7 @@ function groupContentIntoUnits(
         items: [],
       })
     }
-    groups.get(key)!.items.push({ id: c.id, title: c.title, fileType: c.fileType })
+    groups.get(key)!.items.push({ id: c.id, title: c.title, fileType: c.fileType, fileUrl: c.fileUrl, textContent: c.textContent })
   }
 
   return Array.from(groups.values())

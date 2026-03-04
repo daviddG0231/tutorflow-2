@@ -17,13 +17,15 @@ import {
   Image,
   File,
 } from "lucide-react";
+import ContentViewer from "@/components/content-viewer";
 
 type ContentItem = {
   id: string;
   title: string;
   description?: string | null;
-  fileUrl: string;
+  fileUrl: string | null;
   fileType: string;
+  textContent?: string | null;
   createdAt: string;
 };
 
@@ -58,6 +60,7 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
     file: null as File | null,
   });
   const [uploading, setUploading] = useState(false);
+  const [viewingContent, setViewingContent] = useState<ContentItem | null>(null);
 
   const fetchModules = useCallback(async () => {
     try {
@@ -314,18 +317,14 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
                     return (
                       <div
                         key={content.id}
-                        className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50"
+                        onClick={() => setViewingContent(content)}
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50 cursor-pointer"
                       >
                         <span className="text-lg">{ft.emoji}</span>
                         <div className="flex-1 min-w-0">
-                          <a
-                            href={content.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-gray-900 hover:text-sky-600"
-                          >
+                          <span className="text-sm font-medium text-gray-900 hover:text-sky-600">
                             {content.title}
-                          </a>
+                          </span>
                           {content.description && (
                             <p className="text-xs text-gray-400 truncate">{content.description}</p>
                           )}
@@ -433,6 +432,18 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Content Viewer */}
+      {viewingContent && (
+        <ContentViewer
+          isOpen={true}
+          onClose={() => setViewingContent(null)}
+          title={viewingContent.title}
+          fileUrl={viewingContent.fileUrl}
+          fileType={viewingContent.fileType}
+          textContent={viewingContent.textContent}
+        />
       )}
     </div>
   );
