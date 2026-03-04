@@ -152,8 +152,9 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(content, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("POST /api/upload error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 500 });
   }
 }
