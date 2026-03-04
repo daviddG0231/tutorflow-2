@@ -45,15 +45,21 @@ export async function POST(req: NextRequest) {
     const groupId = (formData.get("groupId") as string) || null;
     const moduleId = (formData.get("moduleId") as string) || null;
 
-    // Validate required fields
-    if (!file || !courseId || !title || !fileType) {
+    // Validate required fields (file not required for NOTE type)
+    if (!courseId || !title || !fileType) {
       return NextResponse.json(
-        { error: "Missing required fields: file, courseId, title, fileType" },
+        { error: "Missing required fields: courseId, title, fileType" },
+        { status: 400 }
+      );
+    }
+    if (fileType !== "NOTE" && !file) {
+      return NextResponse.json(
+        { error: "File is required for non-note content" },
         { status: 400 }
       );
     }
 
-    const validTypes = ["VIDEO", "PDF", "SLIDE", "IMAGE", "DOCUMENT"];
+    const validTypes = ["VIDEO", "PDF", "SLIDE", "IMAGE", "DOCUMENT", "NOTE"];
     if (!validTypes.includes(fileType)) {
       return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
     }
@@ -66,7 +72,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Course not found or not yours" }, { status: 404 });
     }
 
+    // Handle NOTE type (text content, no file needed)
+    if (fileType === "NOTE") {
+      const textContent = (formData.get("textContent") as string) || "";
+      const content = await prisma.content.create({
+        data: {
+          courseId,
+          ...(groupId && groupId.trim() ? { groupId: groupId.trim() } : {}),
+          ...(moduleId && moduleId.trim() ? { moduleId: moduleId.trim() } : {}),
+          title,
+          description,
+          textContent,
+          fileType: "NOTE",
+        },
+      });
+      await notifyEnrolledStudents(courseId, `New note in ${course.name}: ${title}`);
+      return NextResponse.json(content, { status: 201 });
+    }
+
+    // Handle VIDEO URL (e.g. YouTube link, no file upload needed)
+    const videoUrl = (formData.get("videoUrl") as string) || null;
+    if (fileType === "VIDEO" && videoUrl && !file) {
+      const content = await prisma.content.create({
+        data: {
+          courseId,
+          ...(groupId && groupId.trim() ? { groupId: groupId.trim() } : {}),
+          ...(moduleId && moduleId.trim() ? { moduleId: moduleId.trim() } : {}),
+          title,
+          description,
+          fileUrl: videoUrl,
+          fileType: "VIDEO",
+        },
+      });
+      await notifyEnrolledStudents(courseId, `New video in ${course.name}: ${title}`);
+      return NextResponse.json(content, { status: 201 });
+    }
+
     // Convert File to buffer for Cloudinary upload
+    if (!file) {
+      return NextResponse.json({ error: "File is required" }, { status: 400 });
+    }
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
@@ -87,11 +132,12 @@ export async function POST(req: NextRequest) {
       stream.end(buffer);
     });
 
-    // Create content record in database (optional groupId = for this group only)
+    // Create content record in database (optional groupId & moduleId)
     const content = await prisma.content.create({
       data: {
         courseId,
         ...(groupId && groupId.trim() ? { groupId: groupId.trim() } : {}),
+        ...(moduleId && moduleId.trim() ? { moduleId: moduleId.trim() } : {}),
         title,
         description,
         fileUrl: result.secure_url,
