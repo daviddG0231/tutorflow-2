@@ -136,34 +136,45 @@ export async function POST(req: NextRequest) {
     });
 
     // Create content record in database (optional groupId & moduleId)
-    const content = await prisma.content.create({
-      data: {
-        courseId,
-        ...(groupId && groupId.trim() ? { groupId: groupId.trim() } : {}),
-        ...(moduleId && moduleId.trim() ? { moduleId: moduleId.trim() } : {}),
-        title,
-        description,
-        fileUrl: result.secure_url,
-        fileType: fileType as "VIDEO" | "PDF" | "SLIDE" | "IMAGE" | "DOCUMENT",
-      },
-    });
+    let content;
+    try {
+      content = await prisma.content.create({
+        data: {
+          courseId,
+          ...(groupId && groupId.trim() ? { groupId: groupId.trim() } : {}),
+          ...(moduleId && moduleId.trim() ? { moduleId: moduleId.trim() } : {}),
+          title,
+          description,
+          fileUrl: result.secure_url,
+          fileType: fileType as "VIDEO" | "PDF" | "SLIDE" | "IMAGE" | "DOCUMENT",
+        },
+      });
+    } catch (dbErr: unknown) {
+      console.error("DB create error:", dbErr);
+      const dbMsg = dbErr instanceof Error ? dbErr.message : JSON.stringify(dbErr);
+      return NextResponse.json({ error: `DB error: ${dbMsg}` }, { status: 500 });
+    }
 
-    // Notify all enrolled students
-    await notifyEnrolledStudents(
-      courseId,
-      `New ${fileType} uploaded in ${course.name}: ${title}`
-    );
+    // Notify (don't fail the upload if notifications fail)
+    try {
+      await notifyEnrolledStudents(
+        courseId,
+        `New ${fileType} uploaded in ${course.name}: ${title}`
+      );
+    } catch (notifErr) {
+      console.error("Notification error (non-fatal):", notifErr);
+    }
 
     return NextResponse.json(content, { status: 201 });
   } catch (error: unknown) {
-    console.error("POST /api/upload error:", JSON.stringify(error, null, 2));
+    console.error("POST /api/upload error:", error);
     let msg = "Unknown error";
     if (error instanceof Error) {
       msg = error.message;
     } else if (error && typeof error === "object") {
-      msg = (error as Record<string, unknown>).message as string
-        || (error as Record<string, unknown>).http_code as string
-        || JSON.stringify(error);
+      try { msg = JSON.stringify(error); } catch { msg = String(error); }
+    } else {
+      msg = String(error);
     }
     return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 500 });
   }
