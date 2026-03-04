@@ -14,16 +14,9 @@ import { prisma } from "@/lib/prisma";
 import cloudinary from "@/lib/cloudinary";
 import { notifyEnrolledStudents } from "@/lib/notifications";
 
-// Map file types to Cloudinary resource_type
-function getResourceType(fileType: string): "video" | "image" | "raw" {
-  switch (fileType) {
-    case "VIDEO":
-      return "video";
-    case "IMAGE":
-      return "image";
-    default:
-      return "raw"; // PDF, SLIDE, DOCUMENT
-  }
+// Use 'auto' for all uploads — Cloudinary detects the type
+function getResourceType(): "auto" {
+  return "auto";
 }
 
 export async function POST(req: NextRequest) {
@@ -116,7 +109,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Upload to Cloudinary
-    const resourceType = getResourceType(fileType);
+    const resourceType = getResourceType();
     const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {

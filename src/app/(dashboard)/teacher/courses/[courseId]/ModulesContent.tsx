@@ -17,7 +17,7 @@ import {
   Image,
   File,
 } from "lucide-react";
-import ContentViewer from "@/components/content-viewer";
+import InlineContentViewer from "@/components/inline-content-viewer";
 
 type ContentItem = {
   id: string;
@@ -60,7 +60,7 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
     file: null as File | null,
   });
   const [uploading, setUploading] = useState(false);
-  const [viewingContent, setViewingContent] = useState<ContentItem | null>(null);
+  const [expandedContent, setExpandedContent] = useState<string | null>(null);
   const [deletingContent, setDeletingContent] = useState<string | null>(null);
 
   const deleteContent = async (contentId: string) => {
@@ -332,39 +332,50 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
                   mod.contents.map((content) => {
                     const ft = FILE_TYPE_ICONS[content.fileType] || FILE_TYPE_ICONS.DOCUMENT;
                     return (
-                      <div
-                        key={content.id}
-                        className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50 group"
-                      >
-                        <span
-                          className="text-lg cursor-pointer"
-                          onClick={() => setViewingContent(content)}
-                        >{ft.emoji}</span>
+                      <div key={content.id}>
                         <div
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => setViewingContent(content)}
+                          className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50 group cursor-pointer"
+                          onClick={() => setExpandedContent(expandedContent === content.id ? null : content.id)}
                         >
-                          <span className="text-sm font-medium text-gray-900 hover:text-sky-600">
-                            {content.title}
-                          </span>
-                          {content.description && (
-                            <p className="text-xs text-gray-400 truncate">{content.description}</p>
+                          {expandedContent === content.id ? (
+                            <ChevronDown className="w-4 h-4 text-sky-500 shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
                           )}
+                          <span className="text-lg">{ft.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm font-medium ${expandedContent === content.id ? "text-sky-600" : "text-gray-900"}`}>
+                              {content.title}
+                            </span>
+                            {content.description && (
+                              <p className="text-xs text-gray-400 truncate">{content.description}</p>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-400 whitespace-nowrap">
+                            {new Date(content.createdAt).toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteContent(content.id); }}
+                            disabled={deletingContent === content.id}
+                            className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded"
+                            title="Delete content"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">
-                          {new Date(content.createdAt).toLocaleDateString("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                          })}
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteContent(content.id); }}
-                          disabled={deletingContent === content.id}
-                          className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded"
-                          title="Delete content"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {expandedContent === content.id && (
+                          <div className="px-5 pb-4">
+                            <InlineContentViewer
+                              fileUrl={content.fileUrl}
+                              fileType={content.fileType}
+                              textContent={content.textContent}
+                              title={content.title}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -464,17 +475,6 @@ export default function ModulesContent({ courseId }: { courseId: string }) {
         </div>
       )}
 
-      {/* Content Viewer */}
-      {viewingContent && (
-        <ContentViewer
-          isOpen={true}
-          onClose={() => setViewingContent(null)}
-          title={viewingContent.title}
-          fileUrl={viewingContent.fileUrl}
-          fileType={viewingContent.fileType}
-          textContent={viewingContent.textContent}
-        />
-      )}
     </div>
   );
 }
