@@ -125,7 +125,10 @@ export async function POST(req: NextRequest) {
           public_id: `${Date.now()}-${file.name.replace(/\.[^/.]+$/, "")}`,
         },
         (error, result) => {
-          if (error || !result) reject(error || new Error("Upload failed"));
+          if (error || !result) {
+            const errMsg = error?.message || error?.http_code || JSON.stringify(error);
+            reject(new Error(`Cloudinary: ${errMsg}`));
+          }
           else resolve(result);
         }
       );
@@ -153,8 +156,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(content, { status: 201 });
   } catch (error: unknown) {
-    console.error("POST /api/upload error:", error);
-    const msg = error instanceof Error ? error.message : String(error);
+    console.error("POST /api/upload error:", JSON.stringify(error, null, 2));
+    let msg = "Unknown error";
+    if (error instanceof Error) {
+      msg = error.message;
+    } else if (error && typeof error === "object") {
+      msg = (error as Record<string, unknown>).message as string
+        || (error as Record<string, unknown>).http_code as string
+        || JSON.stringify(error);
+    }
     return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 500 });
   }
 }
