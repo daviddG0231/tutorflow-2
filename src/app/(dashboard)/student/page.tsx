@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   BookOpen,
-  Calendar,
-  Users,
   ClipboardList,
   LogIn,
   Loader2,

@@ -7,10 +7,7 @@ import { notFound } from 'next/navigation';
 import {
   Clock,
   Download,
-  Eye,
   FileText,
-  Info,
-  Link,
   MoreVertical,
 } from 'lucide-react';
 import GradingPanel from './GradingPanel';

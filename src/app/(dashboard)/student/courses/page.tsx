@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { BookOpen, Users, MapPin, Clock } from 'lucide-react'
+import { BookOpen, Users, MapPin } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 

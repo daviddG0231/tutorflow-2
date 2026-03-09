@@ -31,7 +31,7 @@ export default function TeacherAttendancePage() {
   const [loadingStudents, setLoadingStudents] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [recentRecords, setRecentRecords] = useState<Record<string, AttendanceRecord[]>>({})
-  const [existingDates, setExistingDates] = useState<string[]>([])
+
 
   // Load courses
   useEffect(() => {
@@ -55,7 +55,6 @@ export default function TeacherAttendancePage() {
       setStudents([])
       setAttendance({})
       setRecentRecords({})
-      setExistingDates([])
       return
     }
     setLoadingStudents(true)
@@ -80,14 +79,9 @@ export default function TeacherAttendancePage() {
     const fetchAttendance = fetch(`/api/attendance?courseId=${selectedCourse}`)
       .then((r) => r.json())
 
-    // Fetch attendance dates
-    const fetchDates = fetch(`/api/attendance/dates?courseId=${selectedCourse}`)
-      .then((r) => r.json())
-
-    Promise.all([fetchStudents, fetchAttendance, fetchDates])
-      .then(([defaults, attData, datesData]) => {
+    Promise.all([fetchStudents, fetchAttendance])
+      .then(([defaults, attData]) => {
         setRecentRecords(attData.records || {})
-        setExistingDates(datesData.dates || [])
 
         // If attendance exists for selected date, load it
         const dateRecords = attData.records?.[date]

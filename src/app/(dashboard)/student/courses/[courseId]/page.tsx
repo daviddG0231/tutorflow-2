@@ -8,7 +8,6 @@ import {
   Play,
   Download,
   MessageCircle,
-  Clock,
 } from 'lucide-react'
 import CourseContentTree from './CourseContentTree'
 import JoinCourseBar from './JoinCourseBar'
