@@ -117,43 +117,77 @@ export default async function StudentAssignmentsPage() {
   };
 
   function formatDate(date: Date) {
+    const now = new Date();
+    const diff = date.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return "Due today";
+    if (days === 1) return "Due tomorrow";  
+    if (days === -1) return "Due yesterday";
+    if (days > 1 && days <= 7) return `Due in ${days} days`;
+    if (days < -1 && days >= -7) return `${Math.abs(days)} days late`;
+    
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
     });
   }
 
   function AssignmentCard({ assignment }: { assignment: AssignmentItem }) {
+    const isLate = assignment.status === "Late";
+    const isPending = assignment.status === "Pending";
+    const isUrgent = isPending && (assignment.deadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) <= 2;
+
     return (
       <Link href={`/student/courses/${assignment.courseId}`}>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-sky-200 transition-all cursor-pointer">
-          <div className="flex items-start justify-between gap-4">
+        <div className={`bg-white rounded-xl border p-4 md:p-5 hover:shadow-md transition-all cursor-pointer ${
+          isLate ? 'border-red-200 hover:border-red-300' : 
+          isUrgent ? 'border-amber-200 hover:border-amber-300' :
+          'border-gray-200 hover:border-sky-200'
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <FileText className="h-4 w-4 text-sky-500 flex-shrink-0" />
-                <h3 className="font-semibold text-gray-900 truncate">
-                  {assignment.title}
-                </h3>
+              <div className="flex items-start gap-2 mb-2">
+                <FileText className="h-4 w-4 text-sky-500 flex-shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-gray-900 leading-tight">
+                    {assignment.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                    <BookOpen className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">{assignment.courseName}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                <BookOpen className="h-3.5 w-3.5" />
-                <span className="truncate">{assignment.courseName}</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  {formatDate(assignment.deadline)}
+              
+              {assignment.description && (
+                <p className="text-sm text-gray-600 mb-3 overflow-hidden" style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical'
+                }}>
+                  {assignment.description}
+                </p>
+              )}
+              
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span className={`flex items-center gap-1.5 ${
+                  isLate ? 'text-red-600' : 
+                  isUrgent ? 'text-amber-600' : 
+                  'text-gray-600'
+                }`}>
+                  <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="font-medium">{formatDate(assignment.deadline)}</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <Trophy className="h-3.5 w-3.5" />
-                  {assignment.totalMarks} marks
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <Trophy className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{assignment.totalMarks} marks</span>
                 </span>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            
+            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2 flex-shrink-0">
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusBadge[assignment.status]}`}
               >
@@ -161,9 +195,14 @@ export default async function StudentAssignmentsPage() {
                 {assignment.status}
               </span>
               {assignment.grade !== null && (
-                <span className="text-sm font-medium text-sky-600">
-                  {assignment.grade}/{assignment.totalMarks}
-                </span>
+                <div className="text-right">
+                  <span className="text-sm font-medium text-sky-600">
+                    {assignment.grade}/{assignment.totalMarks}
+                  </span>
+                  <div className="text-xs text-gray-500">
+                    {Math.round((assignment.grade / assignment.totalMarks) * 100)}%
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -192,36 +231,76 @@ export default async function StudentAssignmentsPage() {
     );
   }
 
+  const urgentPending = pending.filter(a => (a.deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24) <= 2);
+  const regularPending = pending.filter(a => (a.deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24) > 2);
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <ClipboardList className="h-7 w-7 text-sky-500" />
           Assignments
         </h1>
-        <div className="flex items-center gap-3 text-sm text-gray-500">
-          <span className="flex items-center gap-1">
-            <Clock className="h-4 w-4 text-amber-500" />
-            {pending.length} pending
-          </span>
-          <span className="flex items-center gap-1">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            {late.length} late
-          </span>
-          <span className="flex items-center gap-1">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            {submitted.length} submitted
-          </span>
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-gray-600">
+              <Clock className="h-4 w-4 text-amber-500" />
+              <span className="font-medium">{pending.length}</span> pending
+            </span>
+            <span className="flex items-center gap-1.5 text-gray-600">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <span className="font-medium">{late.length}</span> late
+            </span>
+            <span className="flex items-center gap-1.5 text-gray-600">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="font-medium">{submitted.length}</span> submitted
+            </span>
+          </div>
         </div>
       </div>
 
-      {(pending.length > 0 || late.length > 0) && (
+      {urgentPending.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Pending & Overdue
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-red-600 uppercase tracking-wider">
+              Urgent - Due Soon
+            </h2>
+            <div className="flex-1 h-px bg-red-100"></div>
+          </div>
           <div className="space-y-3">
-            {[...pending, ...late].map((a) => (
+            {urgentPending.map((a) => (
+              <AssignmentCard key={a.id} assignment={a} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {late.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-red-600 uppercase tracking-wider">
+              Overdue
+            </h2>
+            <div className="flex-1 h-px bg-red-100"></div>
+          </div>
+          <div className="space-y-3">
+            {late.map((a) => (
+              <AssignmentCard key={a.id} assignment={a} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {regularPending.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-amber-600 uppercase tracking-wider">
+              Upcoming
+            </h2>
+            <div className="flex-1 h-px bg-amber-100"></div>
+          </div>
+          <div className="space-y-3">
+            {regularPending.map((a) => (
               <AssignmentCard key={a.id} assignment={a} />
             ))}
           </div>
@@ -230,9 +309,12 @@ export default async function StudentAssignmentsPage() {
 
       {submitted.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Submitted
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-green-600 uppercase tracking-wider">
+              Submitted
+            </h2>
+            <div className="flex-1 h-px bg-green-100"></div>
+          </div>
           <div className="space-y-3">
             {submitted.map((a) => (
               <AssignmentCard key={a.id} assignment={a} />
