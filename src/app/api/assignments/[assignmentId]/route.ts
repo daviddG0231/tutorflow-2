@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { assignmentId: string } }
+  { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { assignmentId } = params;
+    const { assignmentId } = await params;
 
     const assignment = await prisma.assignment.findUnique({
       where: { id: assignmentId },
@@ -64,7 +64,7 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { assignmentId: string } }
+  { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,7 +75,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Only teachers can delete assignments" }, { status: 403 });
     }
 
-    const { assignmentId } = params;
+    const { assignmentId } = await params;
 
     // Find assignment and verify ownership
     const assignment = await prisma.assignment.findUnique({

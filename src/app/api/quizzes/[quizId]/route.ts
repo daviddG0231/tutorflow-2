@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { quizId: string } }
+  { params }: { params: Promise<{ quizId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,8 +18,10 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { quizId } = await params;
+    
     const quiz = await prisma.quiz.findUnique({
-      where: { id: params.quizId },
+      where: { id: quizId },
       include: {
         course: { select: { teacherId: true, name: true } },
         grades: {
@@ -55,7 +57,7 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { quizId: string } }
+  { params }: { params: Promise<{ quizId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -66,8 +68,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Only teachers can delete quizzes" }, { status: 403 });
     }
 
+    const { quizId } = await params;
+    
     const quiz = await prisma.quiz.findUnique({
-      where: { id: params.quizId },
+      where: { id: quizId },
       include: { course: { select: { teacherId: true } } },
     });
 
@@ -78,7 +82,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Not your course" }, { status: 403 });
     }
 
-    await prisma.quiz.delete({ where: { id: params.quizId } });
+    await prisma.quiz.delete({ where: { id: quizId } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

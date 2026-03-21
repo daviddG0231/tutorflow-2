@@ -19,7 +19,7 @@ const gradeSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { submissionId: string } }
+  { params }: { params: Promise<{ submissionId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,7 +37,7 @@ export async function PATCH(
     }
 
     const { grade, feedback } = parsed.data;
-    const { submissionId } = params;
+    const { submissionId } = await params;
 
     // Get submission with assignment and course info
     const submission = await prisma.submission.findUnique({
