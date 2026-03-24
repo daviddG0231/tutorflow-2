@@ -34,7 +34,7 @@ export default function TopBar() {
       <div className="flex items-center gap-4">
         <span className="text-right">
           <p className="text-sm font-semibold text-gray-800">{session?.user?.name || 'User'}</p>
-          <p className="text-xs text-gray-500">{(session?.user as any)?.role === 'TEACHER' ? 'Teacher' : 'Student'}</p>
+          <p className="text-xs text-gray-500">{session?.user?.role === 'TEACHER' ? 'Teacher' : 'Student'}</p>
         </span>
 
         <Link href="/notifications" className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">

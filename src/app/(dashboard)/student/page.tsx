@@ -103,7 +103,7 @@ export default function StudentDashboard() {
     )
   }
 
-  const userName = (session?.user as any)?.name || 'Student'
+  const userName = session?.user?.name || 'Student'
 
   return (
     <div className="space-y-6">

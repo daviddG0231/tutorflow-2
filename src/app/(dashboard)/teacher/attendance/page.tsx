@@ -38,7 +38,7 @@ export default function TeacherAttendancePage() {
     fetch('/api/courses?role=teacher')
       .then((r) => r.json())
       .then((data) => {
-        const list = (data.courses || data || []).map((c: any) => ({
+        const list = (data.courses || data || []).map((c: Course & { _count?: { enrollments?: number }; studentCount?: number }) => ({
           id: c.id,
           name: c.name,
           studentCount: c._count?.enrollments ?? c.studentCount ?? 0,
@@ -63,7 +63,7 @@ export default function TeacherAttendancePage() {
     const fetchStudents = fetch(`/api/courses/${selectedCourse}/students`)
       .then((r) => r.json())
       .then((data) => {
-        const list: Student[] = (data.students || data || []).map((s: any) => ({
+        const list: Student[] = (data.students || data || []).map((s: Student & { student?: Student; studentId?: string; _count?: { enrollments?: number } }) => ({
           id: s.id ?? s.studentId ?? s.student?.id,
           name: s.name ?? s.student?.name ?? 'Unknown',
           email: s.email ?? s.student?.email ?? '',
@@ -87,7 +87,7 @@ export default function TeacherAttendancePage() {
         const dateRecords = attData.records?.[date]
         if (dateRecords) {
           const loaded: Record<string, 'PRESENT' | 'ABSENT'> = { ...defaults }
-          dateRecords.forEach((r: any) => {
+          dateRecords.forEach((r: AttendanceRecord & { student?: { id: string } }) => {
             loaded[r.studentId ?? r.student?.id] = r.status
           })
           setAttendance(loaded)
@@ -310,7 +310,7 @@ export default function TeacherAttendancePage() {
             {Object.entries(recentRecords)
               .slice(0, 10)
               .map(([d, records]) => {
-                const present = records.filter((r: any) => r.status === 'PRESENT').length
+                const present = records.filter((r: AttendanceRecord) => r.status === 'PRESENT').length
                 const total = records.length
                 return (
                   <button

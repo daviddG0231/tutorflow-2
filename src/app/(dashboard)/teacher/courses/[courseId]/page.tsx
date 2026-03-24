@@ -43,7 +43,7 @@ export default async function TeacherCourseDetailPage({
     },
   })
 
-  if (!course || course.teacherId !== (session.user as any).id) {
+  if (!course || course.teacherId !== session.user.id) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">

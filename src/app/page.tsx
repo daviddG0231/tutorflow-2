@@ -23,7 +23,7 @@ export default function Home() {
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      const role = (session.user as any).role
+      const role = session.user.role
       router.replace(role === 'STUDENT' ? '/student' : '/teacher')
     }
   }, [status, session, router])
