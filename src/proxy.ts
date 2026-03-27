@@ -1,5 +1,5 @@
 // ============================================================
-// middleware.ts — Route Protection
+// proxy.ts — Route Protection (Next.js 16+ Proxy API)
 //
 // This runs BEFORE every request. It checks:
 // 1. Is the user logged in?
@@ -15,7 +15,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   // Get the JWT token (null if not logged in)
   const token = await getToken({ req });
   const { pathname } = req.nextUrl;
@@ -49,7 +49,7 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Only run middleware on these paths (skip API, static files, etc.)
+// Only run proxy on these paths (skip API, static files, etc.)
 export const config = {
   matcher: ["/teacher/:path*", "/student/:path*", "/login", "/register"],
 };
